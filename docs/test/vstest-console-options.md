@@ -1,7 +1,7 @@
 ---
 title: VSTest.Console.exe command-line options
 description: Learn about the VSTest.Console.exe command-line tool that runs tests. This article includes the General command-line options.
-ms.date: 02/28/2025
+ms.date: 07/14/2026
 ms.topic: reference
 helpviewer_keywords:
 - vstest.console.exe
@@ -33,10 +33,11 @@ The following table lists all the options for *VSTest.Console.exe* and short des
 |**/Tests:[*test name*]**|Run tests with names that contain the provided values. This command matches against the full test name, including the namespace. To provide multiple values, separate them by commas.<br />Example: `/Tests:TestMethod1,testMethod2`<br />The **/Tests** command-line option can't be used with the **/TestCaseFilter** command-line option.|
 |**/Parallel**|Specifies that the tests be executed in parallel. By default, up to all available cores on the machine can be used. You can configure the number of cores to use in a settings file.|
 |**/Enablecodecoverage**|Enables data diagnostic adapter CodeCoverage in the test run.<br />Default settings are used if not specified using settings file.|
-|**/InIsolation**|Runs the tests in an isolated process.<br />This isolation makes the *vstest.console.exe* process less likely to be stopped on an error in the tests, but tests might run slower.|
+|**/InIsolation**|Runs the tests in an isolated process.<br />This isolation makes the *vstest.console.exe* process less likely to be stopped on an error in the tests, but tests might run slower.<br />This flag is deprecated. Tests are always run in a separate process.|
 |**/UseVsixExtensions**|This option makes the *vstest.console.exe* process use or skip the VSIX extensions installed (if any) in the test run.<br />This option is deprecated. Starting from the next major release of Visual Studio this option may be removed. Move to consuming extensions made available as a NuGet package.<br />Example: `/UseVsixExtensions:true`|
 |**/TestAdapterPath:[*path*]**|Forces the *vstest.console.exe* process to use custom test adapters from a specified path (if any) in the test run.<br />Example: `/TestAdapterPath:[pathToCustomAdapters]`|
-|**/Platform:[*platform type*]**|Forces the given platform to be used, instead of the platform determined from the current runtime. This option is able to force only x86, and x64 platforms on Windows. The ARM option is broken and will result in x64 on most systems.<br />Do NOT specify this option to run on runtimes that aren't in the list of valid values such as ARM64.<br />Valid values are x86, x64, and ARM.<br /> 
+|**/TestAdapterLoadingStrategy:[*strategy*]**|Controls how test adapters are loaded. Supported values are:<br />**Explicit** - Loads only adapters specified by **/TestAdapterPath** (or the `RunConfiguration.TestAdaptersPaths` node). Implies **/InIsolation**. The test run fails if no adapter path is specified.<br />**Default** - Loads adapters as if this argument wasn't specified (next to the source, from provided adapter paths, and from the default directory).<br />**DefaultRuntimeProviders** - Loads the default runtime providers shipped with Test Platform.<br />**ExtensionsDirectory** - Loads adapters inside the *Extensions* folder.<br />**NextToSource** - Loads adapters next to the source.<br />**Recursive** - Recursively searches folders when loading adapters. Must be combined with **Explicit** or **NextToSource**.<br />Combine multiple values with a comma.<br />Example: `/TestAdapterLoadingStrategy:Explicit`|
+|**/Platform:[*platform type*]**|Forces the given platform to be used, instead of the platform determined from the current runtime. This option is able to force only x86, and x64 platforms on Windows. The ARM option is broken and will result in x64 on most systems.<br />Do NOT specify this option to run on runtimes that aren't in the list of valid values such as ARM64.<br />Valid values are x86, x64, and ARM.|
 |**/Framework: [*framework version*]**|Target .NET version to be used for test execution.<br />Example values are `Framework35`, `Framework40`, `Framework45`, `FrameworkUap10`, `.NETCoreApp,Version=v1.1`.<br />TargetFrameworkAttribute is used to automatically detect this option from your assembly, and defaults to `Framework40` when the attribute isn't present. You must specify this option explicitly if you remove the [TargetFrameworkAttribute](/dotnet/api/system.runtime.versioning.targetframeworkattribute) from your .NET Core assemblies.<br />If the target framework is specified as **Framework35**, the tests run in CLR 4.0 "compatibility mode".<br />Example: `/Framework:framework40`|
 |**/TestCaseFilter:[*expression*]**|Run tests that match the given expression.<br /><Expression\> is of the format <property\>=<value\>[\|<Expression\>].<br />Example: `/TestCaseFilter:"Priority=1"`<br />Example: `/TestCaseFilter:"TestCategory=Nightly|FullyQualifiedName=Namespace.ClassName.MethodName"`<br />The **/TestCaseFilter** command-line option can't be used with the **/Tests** command-line option. <br />For information about creating and using expressions, see [TestCase filter](https://github.com/Microsoft/vstest-docs/blob/main/docs/filter.md).|
 |**/?**|Displays usage information.|
@@ -46,12 +47,14 @@ The following table lists all the options for *VSTest.Console.exe* and short des
 |**/ListExecutors**|Lists installed test executors.|
 |**/ListLoggers**|Lists installed test loggers.|
 |**/ListSettingsProviders**|Lists installed test settings providers.|
-|**/Blame**|Runs the tests in blame mode. This option is helpful in isolating problematic tests that cause the test host to crash. When a crash is detected, it creates a sequence file in `TestResults/<Guid>/<Guid>_Sequence.xml` that captures the order of tests that were run before the crash. For more information, see [Blame data collector](https://github.com/Microsoft/vstest-docs/blob/main/docs/extensions/blame-datacollector.md).|
-|**/Diag:[*file name*]**|Writes diagnostic trace logs to the specified file.|
+|**/Blame:[*parameters*]**|Runs the tests in blame mode. This option is helpful in isolating problematic tests that cause the test host to crash. When a crash is detected, it creates a sequence file in `TestResults/<Guid>/<Guid>_Sequence.xml` that captures the order of tests that were run before the crash. For more information, see [Blame data collector](https://github.com/Microsoft/vstest-docs/blob/main/docs/extensions/blame-datacollector.md).<br />You can optionally collect a process dump of the test host by using the following parameters:<br />**CollectDump** - Collects a process dump for the test host. By default, a mini dump is collected on a crash.<br />**CollectAlways** - Collects a dump on exit even if there's no crash (`true`/`false`).<br />**DumpType** - Specifies the dump type (`mini`/`full`).<br />Collecting a crash dump on Windows requires *procdump.exe* and *procdump64.exe* to be available in the PATH, or in a directory pointed to by the `PROCDUMP_PATH` environment variable.<br />Example: `/Blame:CollectDump;CollectAlways=true;DumpType=full`|
+|**/Diag:[*file name*]**|Writes diagnostic trace logs to the specified file.<br />Change the trace level by using the **tracelevel** parameter. Allowed values are `off`, `error`, `warning`, `info`, and `verbose` (defaults to `verbose`).<br />Example: `/Diag:log.txt;tracelevel=info`|
 |**/ResultsDirectory:[*path*]**|Test results directory will be created in specified path if not exists.<br />Example: `/ResultsDirectory:<pathToResultsDirectory>`|
 |**/ParentProcessId:[*parentProcessId*]**|Process ID of the Parent Process responsible for launching current process.|
 |**/Port:[*port*]**|The Port for socket connection and receiving the event messages.|
 |**/Collect:[*dataCollector friendlyName*]**|Enables data collector for the test run. [More information](https://github.com/Microsoft/vstest-docs/blob/main/docs/analyze.md).|
+|**/DisableAutoFakes:[*true/false*]**|Disables the automatic use of the Microsoft Fakes framework in the test run.<br />Example: `/DisableAutoFakes:true`|
+|**@[*file name*]**|Reads more command-line options from the specified response file.<br />Example: `@arguments.rsp`|
 
 > [!TIP]
 > The options and values aren't case-sensitive.
@@ -111,13 +114,21 @@ Here is an example for the console logger:
 vstest.console.exe myTestFile.dll /logger:console;verbosity=detailed
 ```
 
-Supported verbosity levels include quiet, minimal, normal, and detailed.
+Supported verbosity levels include quiet, minimal, normal, and detailed. When you don't specify a verbosity level, the console logger defaults to `minimal` on .NET (`dotnet vstest`) and `normal` on .NET Framework.
 
 In PowerShell, you need to use quotes:
 
 ```cmd
 vstest.console.exe myTestFile.dll /logger:"console;verbosity=detailed"
 ```
+
+You can also add a diagnostic-level prefix to each console log message by using the `prefix` parameter (defaults to `false`):
+
+```cmd
+vstest.console.exe myTestFile.dll /logger:"console;prefix=true"
+```
+
+For more information, see [Console logger](https://aka.ms/console-logger).
 
 ## UWP example
 
@@ -126,3 +137,13 @@ For UWP, the appxrecipe file must be referenced instead of a DLL.
 ```cmd
 vstest.console.exe /Logger:trx /Platform:x64 /framework:frameworkuap10 UnitTestsUWP\bin\x64\Release\UnitTestsUWP.build.appxrecipe
 ```
+
+## Pass RunSettings arguments through the command line
+
+You can change *runsettings* configurations without authoring a *.runsettings* file by passing arguments after a bare `--` (note the space after `--`). Specify each configuration as a `[name]=[value]` pair, and separate multiple pairs with spaces. All arguments after `--` are treated as RunSettings arguments, so they must appear at the end of the command line. RunSettings arguments take precedence over values in a *.runsettings* file.
+
+```cmd
+vstest.console.exe myTestFile.dll -- MSTest.DeploymentEnabled=false MSTest.MapInconclusiveToFailed=true
+```
+
+For more information, see [Passing RunSettings arguments through the command line](https://aka.ms/vstest-runsettings-arguments).
